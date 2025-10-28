@@ -54,7 +54,7 @@ Resources:
               detail:
                 bucket:
                   name:
-                    - yerttle_tours
+                    - yerttle-tours
                 object:
                   key:
                     - suffix: .m4a
