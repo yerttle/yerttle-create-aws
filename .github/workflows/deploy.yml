@@ -1,0 +1,92 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allows manual triggering from GitHub UI
+
+env:
+  PYTHON_VERSION: '3.10'
+  SAM_CLI_VERSION: '1.145.2'
+  STACK_NAME: 'yerttle-transcription-stack'
+  S3_PREFIX: 'yerttle-transcription'
+
+jobs:
+  deploy:
+    name: Build and Deploy to AWS
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Set up AWS SAM CLI
+        uses: aws-actions/setup-sam@v2
+        with:
+          version: ${{ env.SAM_CLI_VERSION }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Cache SAM build
+        uses: actions/cache@v4
+        with:
+          path: .aws-sam
+          key: ${{ runner.os }}-sam-${{ hashFiles('**/template.yaml') }}-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-sam-
+
+      - name: SAM Build
+        run: |
+          echo "Building SAM application..."
+          sam build --use-container
+
+      - name: SAM Deploy
+        run: |
+          echo "Deploying to AWS..."
+          sam deploy \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --s3-bucket ${{ secrets.SAM_BUCKET_NAME }} \
+            --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
+            --stack-name ${{ env.STACK_NAME }} \
+            --s3-prefix ${{ env.S3_PREFIX }} \
+            --region ${{ secrets.AWS_REGION || 'us-east-1' }}
+
+      - name: Get Stack Outputs
+        if: success()
+        run: |
+          echo "Deployment successful! Stack outputs:"
+          aws cloudformation describe-stacks \
+            --stack-name ${{ env.STACK_NAME }} \
+            --query 'Stacks[0].Outputs' \
+            --output table
+
+      - name: Deployment Summary
+        if: success()
+        run: |
+          echo "✅ Deployment completed successfully!"
+          echo "Stack Name: ${{ env.STACK_NAME }}"
+          echo "Region: ${{ secrets.AWS_REGION || 'us-east-1' }}"
+          echo "S3 Bucket: ${{ secrets.SAM_BUCKET_NAME }}"
+
+      - name: Notify on Failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed!"
+          echo "Please check the logs above for error details."
+          echo "Common issues:"
+          echo "  - Missing or incorrect GitHub secrets"
+          echo "  - AWS credentials insufficient permissions"
+          echo "  - S3 bucket does not exist or not accessible"
+          echo "  - Template validation errors"
