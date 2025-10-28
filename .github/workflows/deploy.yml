@@ -36,15 +36,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
-
-      - name: Cache SAM build
-        uses: actions/cache@v4
-        with:
-          path: .aws-sam
-          key: ${{ runner.os }}-sam-${{ hashFiles('**/template.yaml') }}-${{ hashFiles('**/requirements.txt') }}
-          restore-keys: |
-            ${{ runner.os }}-sam-
+          aws-region: ${{ secrets.AWS_REGION || 'eu-west-1' }}
 
       - name: SAM Build
         run: |
@@ -61,7 +53,7 @@ jobs:
             --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM \
             --stack-name ${{ env.STACK_NAME }} \
             --s3-prefix ${{ env.S3_PREFIX }} \
-            --region ${{ secrets.AWS_REGION || 'us-east-1' }}
+            --region ${{ secrets.AWS_REGION || 'eu-west-1' }}
 
       - name: Get Stack Outputs
         if: success()
