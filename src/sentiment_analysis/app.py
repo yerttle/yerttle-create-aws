@@ -23,6 +23,17 @@ COMPREHEND_ROLE_ARN = os.environ.get('COMPREHEND_ROLE_ARN')
 # Comprehend synchronous API limit
 SYNC_API_LIMIT_BYTES = 5000
 
+# Convert Transcribe language code (e.g., 'en-US') to Comprehend language code (e.g., 'en')
+def get_comprehend_language_code(transcribe_lang_code):
+    """
+    Convert Transcribe language code to Comprehend language code.
+    Transcribe uses codes like 'en-US', but Comprehend uses 'en'.
+    """
+    # Extract base language code (everything before the first hyphen)
+    return transcribe_lang_code.split('-')[0]
+
+COMPREHEND_LANGUAGE_CODE = get_comprehend_language_code(LANGUAGE_CODE)
+
 
 def lambda_handler(event, context):
     """
@@ -132,21 +143,21 @@ def process_synchronous_analysis(text, analysis_id, transcription_key, bucket_na
         logger.info("Detecting sentiment...")
         sentiment_response = comprehend_client.detect_sentiment(
             Text=text,
-            LanguageCode=LANGUAGE_CODE
+            LanguageCode=COMPREHEND_LANGUAGE_CODE
         )
 
         # Detect entities
         logger.info("Detecting entities...")
         entities_response = comprehend_client.detect_entities(
             Text=text,
-            LanguageCode=LANGUAGE_CODE
+            LanguageCode=COMPREHEND_LANGUAGE_CODE
         )
 
         # Detect key phrases
         logger.info("Detecting key phrases...")
         key_phrases_response = comprehend_client.detect_key_phrases(
             Text=text,
-            LanguageCode=LANGUAGE_CODE
+            LanguageCode=COMPREHEND_LANGUAGE_CODE
         )
 
         # Compile results
@@ -260,7 +271,7 @@ def process_asynchronous_analysis(text, analysis_id, transcription_key, bucket_n
                 },
                 DataAccessRoleArn=COMPREHEND_ROLE_ARN,
                 JobName=sentiment_job_name,
-                LanguageCode=LANGUAGE_CODE.split('-')[0]  # Use 'en' instead of 'en-US'
+                LanguageCode=COMPREHEND_LANGUAGE_CODE
             )
             job_ids['sentiment'] = sentiment_response['JobId']
             logger.info(f"Started sentiment job: {sentiment_job_name} (ID: {sentiment_response['JobId']})")
@@ -280,7 +291,7 @@ def process_asynchronous_analysis(text, analysis_id, transcription_key, bucket_n
                 },
                 DataAccessRoleArn=COMPREHEND_ROLE_ARN,
                 JobName=entities_job_name,
-                LanguageCode=LANGUAGE_CODE.split('-')[0]
+                LanguageCode=COMPREHEND_LANGUAGE_CODE
             )
             job_ids['entities'] = entities_response['JobId']
             logger.info(f"Started entities job: {entities_job_name} (ID: {entities_response['JobId']})")
@@ -300,7 +311,7 @@ def process_asynchronous_analysis(text, analysis_id, transcription_key, bucket_n
                 },
                 DataAccessRoleArn=COMPREHEND_ROLE_ARN,
                 JobName=key_phrases_job_name,
-                LanguageCode=LANGUAGE_CODE.split('-')[0]
+                LanguageCode=COMPREHEND_LANGUAGE_CODE
             )
             job_ids['keyPhrases'] = key_phrases_response['JobId']
             logger.info(f"Started key phrases job: {key_phrases_job_name} (ID: {key_phrases_response['JobId']})")
