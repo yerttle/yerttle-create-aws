@@ -180,7 +180,6 @@ Resources:
                 object:
                   key:
                     - prefix: transcriptions/
-                    - suffix: .json
 
   # Lambda function to process completed async Comprehend jobs
   ComprehendJobCompletionFunction:
