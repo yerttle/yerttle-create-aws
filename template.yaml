@@ -12,7 +12,7 @@ Globals:
     Runtime: python3.10
     Environment:
       Variables:
-        BUCKET_NAME: yerttle_tours
+        BUCKET_NAME: yerttle-tours
         LANGUAGE_CODE: en-US
         TRANSCRIPTION_PREFIX: transcriptions/
         SENTIMENT_PREFIX: sentiment/
@@ -28,7 +28,7 @@ Resources:
       Description: Starts AWS Transcribe job when m4a file is uploaded to S3
       Policies:
         - S3ReadPolicy:
-            BucketName: yerttle_tours
+            BucketName: yerttle-tours
         - Statement:
           - Effect: Allow
             Action:
@@ -69,7 +69,7 @@ Resources:
       Description: Processes completed transcription and saves results to S3
       Policies:
         - S3CrudPolicy:
-            BucketName: yerttle_tours
+            BucketName: yerttle-tours
         - Statement:
           - Effect: Allow
             Action:
@@ -117,14 +117,14 @@ Resources:
                   - s3:GetObject
                   - s3:ListBucket
                 Resource:
-                  - arn:aws:s3:::yerttle_tours
-                  - arn:aws:s3:::yerttle_tours/*
+                  - arn:aws:s3:::yerttle-tours
+                  - arn:aws:s3:::yerttle-tours/*
               - Effect: Allow
                 Action:
                   - s3:PutObject
                 Resource:
-                  - arn:aws:s3:::yerttle_tours/sentiment/*
-                  - arn:aws:s3:::yerttle_tours/comprehend-output/*
+                  - arn:aws:s3:::yerttle-tours/sentiment/*
+                  - arn:aws:s3:::yerttle-tours/comprehend-output/*
 
   # Lambda function to analyze sentiment, entities, and key phrases
   SentimentAnalysisFunction:
@@ -140,7 +140,7 @@ Resources:
           COMPREHEND_ROLE_ARN: !GetAtt ComprehendServiceRole.Arn
       Policies:
         - S3CrudPolicy:
-            BucketName: yerttle_tours
+            BucketName: yerttle-tours
         - Statement:
           - Effect: Allow
             Action:
@@ -176,7 +176,7 @@ Resources:
               detail:
                 bucket:
                   name:
-                    - yerttle_tours
+                    - yerttle-tours
                 object:
                   key:
                     - prefix: transcriptions/
@@ -192,7 +192,7 @@ Resources:
       Description: Processes completed async Comprehend jobs and saves results to S3
       Policies:
         - S3CrudPolicy:
-            BucketName: yerttle_tours
+            BucketName: yerttle-tours
         - Statement:
           - Effect: Allow
             Action:
