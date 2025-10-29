@@ -13,7 +13,7 @@ transcribe_client = boto3.client('transcribe')
 s3_client = boto3.client('s3')
 
 # Environment variables
-BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle_tours')
+BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle-tours')
 
 
 def lambda_handler(event, context):
@@ -94,7 +94,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': f'Transcript file not found: {str(e)}'})
             }
 
-        # Read and log transcript summary
+        # Read transcript content
         try:
             transcript_obj = s3_client.get_object(
                 Bucket=transcript_bucket,
@@ -113,12 +113,27 @@ def lambda_handler(event, context):
             logger.info(f"  - Word Count: {word_count}")
             logger.info(f"  - Transcript Preview: {transcript_text[:200]}...")
 
+            # Copy transcription to our bucket to trigger sentiment analysis
+            destination_key = f"transcriptions/{job_name}.json"
+            try:
+                s3_client.put_object(
+                    Bucket=BUCKET_NAME,
+                    Key=destination_key,
+                    Body=json.dumps(transcript_content),
+                    ContentType='application/json'
+                )
+                logger.info(f"Copied transcription to s3://{BUCKET_NAME}/{destination_key}")
+            except Exception as copy_error:
+                logger.error(f"Failed to copy transcription to our bucket: {copy_error}")
+                # Continue processing even if copy fails
+
             return {
                 'statusCode': 200,
                 'body': json.dumps({
                     'message': 'Transcription processed successfully',
                     'jobName': job_name,
                     'transcriptLocation': f's3://{transcript_bucket}/{transcript_key}',
+                    'copiedTo': f's3://{BUCKET_NAME}/{destination_key}',
                     'mediaUri': media_file_uri,
                     'wordCount': word_count,
                     'fileSize': file_size

@@ -14,7 +14,7 @@ transcribe_client = boto3.client('transcribe')
 s3_client = boto3.client('s3')
 
 # Environment variables
-BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle_tours')
+BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle-tours')
 LANGUAGE_CODE = os.environ.get('LANGUAGE_CODE', 'en-US')
 
 
@@ -73,14 +73,13 @@ def lambda_handler(event, context):
         media_uri = f"s3://{bucket_name}/{object_key}"
 
         # Start transcription job
+        # Note: Not specifying OutputBucketName - Transcribe will use its own managed storage
         logger.info(f"Starting transcription job: {job_name}")
         response = transcribe_client.start_transcription_job(
             TranscriptionJobName=job_name,
             Media={'MediaFileUri': media_uri},
             MediaFormat='m4a',
-            LanguageCode=LANGUAGE_CODE,
-            OutputBucketName=bucket_name,
-            OutputKey=f'transcriptions/{file_name}-{timestamp}.json'
+            LanguageCode=LANGUAGE_CODE
         )
 
         logger.info(f"Transcription job started successfully: {job_name}")
@@ -91,8 +90,7 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'message': 'Transcription job started successfully',
                 'jobName': job_name,
-                'mediaUri': media_uri,
-                'outputLocation': f's3://{bucket_name}/transcriptions/{file_name}-{timestamp}.json'
+                'mediaUri': media_uri
             })
         }
 

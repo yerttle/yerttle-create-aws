@@ -15,7 +15,7 @@ s3_client = boto3.client('s3')
 comprehend_client = boto3.client('comprehend')
 
 # Environment variables
-BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle_tours')
+BUCKET_NAME = os.environ.get('BUCKET_NAME', 'yerttle-tours')
 LANGUAGE_CODE = os.environ.get('LANGUAGE_CODE', 'en-US')
 SENTIMENT_PREFIX = os.environ.get('SENTIMENT_PREFIX', 'sentiment/')
 COMPREHEND_ROLE_ARN = os.environ.get('COMPREHEND_ROLE_ARN')

@@ -7,7 +7,7 @@ AWS backend service for the Yerttle Tours iOS app that automatically transcribes
 This service uses a serverless, event-driven architecture:
 
 ### Transcription Pipeline
-1. **Audio Upload**: iOS app uploads m4a files to the `yerttle_tours` S3 bucket
+1. **Audio Upload**: iOS app uploads m4a files to the `yerttle-tours` S3 bucket
 2. **Event Detection**: EventBridge detects new m4a file uploads
 3. **Start Transcription**: `StartTranscriptionFunction` Lambda initiates AWS Transcribe job
 4. **Transcription Processing**: AWS Transcribe processes audio asynchronously
@@ -62,11 +62,11 @@ yerttle-create-aws/
    # or follow: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/install-sam-cli.html
    ```
 4. **Python 3.10** or later
-5. **S3 Bucket** named `yerttle_tours` (or update BUCKET_NAME in template.yaml)
+5. **S3 Bucket** named `yerttle-tours` (or update BUCKET_NAME in template.yaml)
 6. **EventBridge enabled on S3 bucket**:
    ```bash
    aws s3api put-bucket-notification-configuration \
-     --bucket yerttle_tours \
+     --bucket yerttle-tours \
      --notification-configuration '{
        "EventBridgeConfiguration": {}
      }'
@@ -118,7 +118,7 @@ sam build && sam deploy
 Upload an m4a file to the S3 bucket (from iOS app or CLI):
 
 ```bash
-aws s3 cp /path/to/audio.m4a s3://yerttle_tours/audio.m4a
+aws s3 cp /path/to/audio.m4a s3://yerttle-tours/audio.m4a
 ```
 
 ### Monitor Transcription
@@ -149,7 +149,7 @@ aws s3 cp /path/to/audio.m4a s3://yerttle_tours/audio.m4a
 Download the transcription JSON file:
 
 ```bash
-aws s3 cp s3://yerttle_tours/transcriptions/[filename].json ./
+aws s3 cp s3://yerttle-tours/transcriptions/[filename].json ./
 ```
 
 The JSON file includes:
@@ -188,7 +188,7 @@ The JSON file includes:
 Download the analysis JSON file:
 
 ```bash
-aws s3 cp s3://yerttle_tours/sentiment/[filename]-analysis.json ./
+aws s3 cp s3://yerttle-tours/sentiment/[filename]-analysis.json ./
 ```
 
 The analysis JSON file includes:
@@ -242,7 +242,7 @@ Results are aggregated from three separate Comprehend jobs and saved with the sa
 
 Modify in `template.yaml` under `Globals.Function.Environment.Variables`:
 
-- `BUCKET_NAME`: S3 bucket name (default: `yerttle_tours`)
+- `BUCKET_NAME`: S3 bucket name (default: `yerttle-tours`)
 - `LANGUAGE_CODE`: Language for transcription and analysis (default: `en-US`)
 - `TRANSCRIPTION_PREFIX`: S3 prefix for transcription output (default: `transcriptions/`)
 - `SENTIMENT_PREFIX`: S3 prefix for analysis output (default: `sentiment/`)
@@ -362,7 +362,7 @@ This will remove:
 - EventBridge rules (S3 events + Transcribe events + Comprehend events)
 - CloudWatch log groups
 
-Note: The S3 bucket `yerttle_tours` and its contents (audio files, transcriptions, analysis results) are NOT deleted. You may want to manually clean up:
+Note: The S3 bucket `yerttle-tours` and its contents (audio files, transcriptions, analysis results) are NOT deleted. You may want to manually clean up:
 - `transcriptions/` folder
 - `sentiment/` folder
 - `comprehend-input/` folder (for async jobs)
