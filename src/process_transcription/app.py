@@ -3,6 +3,7 @@ import boto3
 import os
 import logging
 from urllib.parse import urlparse
+import urllib.request
 
 # Configure logging
 logger = logging.getLogger()
@@ -72,35 +73,15 @@ def lambda_handler(event, context):
                 'body': json.dumps({'error': 'Transcript file URI not found'})
             }
 
-        # Parse S3 location from transcript URI
-        parsed_uri = urlparse(transcript_file_uri)
-        transcript_bucket = parsed_uri.netloc
-        transcript_key = parsed_uri.path.lstrip('/')
+        logger.info(f"Transcript URI: {transcript_file_uri}")
 
-        logger.info(f"Transcript saved to: s3://{transcript_bucket}/{transcript_key}")
-
-        # Verify the transcript file exists and get its size
+        # Fetch transcript content from Transcribe's managed storage
+        # The URI is a pre-signed URL that we can fetch via HTTPS
         try:
-            head_response = s3_client.head_object(
-                Bucket=transcript_bucket,
-                Key=transcript_key
-            )
-            file_size = head_response.get('ContentLength', 0)
-            logger.info(f"Transcript file size: {file_size} bytes")
-        except Exception as e:
-            logger.error(f"Failed to verify transcript file: {e}")
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'error': f'Transcript file not found: {str(e)}'})
-            }
-
-        # Read transcript content
-        try:
-            transcript_obj = s3_client.get_object(
-                Bucket=transcript_bucket,
-                Key=transcript_key
-            )
-            transcript_content = json.loads(transcript_obj['Body'].read().decode('utf-8'))
+            with urllib.request.urlopen(transcript_file_uri) as response:
+                transcript_content = json.loads(response.read().decode('utf-8'))
+                file_size = len(json.dumps(transcript_content))
+                logger.info(f"Transcript file size: {file_size} bytes")
 
             # Extract transcript text for logging
             transcript_text = transcript_content.get('results', {}).get('transcripts', [{}])[0].get('transcript', '')
@@ -109,7 +90,7 @@ def lambda_handler(event, context):
             logger.info(f"Transcription completed successfully:")
             logger.info(f"  - Job Name: {job_name}")
             logger.info(f"  - Source Audio: {media_file_uri}")
-            logger.info(f"  - Output Location: s3://{transcript_bucket}/{transcript_key}")
+            logger.info(f"  - Transcript URI: {transcript_file_uri}")
             logger.info(f"  - Word Count: {word_count}")
             logger.info(f"  - Transcript Preview: {transcript_text[:200]}...")
 
@@ -132,7 +113,7 @@ def lambda_handler(event, context):
                 'body': json.dumps({
                     'message': 'Transcription processed successfully',
                     'jobName': job_name,
-                    'transcriptLocation': f's3://{transcript_bucket}/{transcript_key}',
+                    'transcriptUri': transcript_file_uri,
                     'copiedTo': f's3://{BUCKET_NAME}/{destination_key}',
                     'mediaUri': media_file_uri,
                     'wordCount': word_count,
@@ -142,13 +123,12 @@ def lambda_handler(event, context):
 
         except Exception as e:
             logger.error(f"Failed to read transcript content: {e}")
-            # Still return success since the file exists
             return {
-                'statusCode': 200,
+                'statusCode': 500,
                 'body': json.dumps({
-                    'message': 'Transcription completed but content read failed',
+                    'message': 'Failed to fetch or process transcript',
                     'jobName': job_name,
-                    'transcriptLocation': f's3://{transcript_bucket}/{transcript_key}',
+                    'transcriptUri': transcript_file_uri,
                     'error': str(e)
                 })
             }
