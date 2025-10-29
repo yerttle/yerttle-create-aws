@@ -80,11 +80,7 @@ def lambda_handler(event, context):
             MediaFormat='m4a',
             LanguageCode=LANGUAGE_CODE,
             OutputBucketName=bucket_name,
-            OutputKey=f'transcriptions/{file_name}-{timestamp}.json',
-            Settings={
-                'ShowSpeakerLabels': False,
-                'MaxSpeakerLabels': 2
-            }
+            OutputKey=f'transcriptions/{file_name}-{timestamp}.json'
         )
 
         logger.info(f"Transcription job started successfully: {job_name}")
